@@ -24,7 +24,7 @@ fn main() -> Result<(), ConfigError> {
     let sysctl_conf_file_path = &args[SYSCTL_CONF_FILE_PATH_ARG_INDEX];
     let schema_file_path = &args[SCHEMA_FILE_PATH_ARG_INDEX];
 
-    match parse_sysctl_from_path(sysctl_conf_file_path, &schema_file_path) {
+    match parse_sysctl_from_path(sysctl_conf_file_path, schema_file_path) {
         Ok(config) => {
             println!("Parsed config: {:?}", config);
             Ok(())
