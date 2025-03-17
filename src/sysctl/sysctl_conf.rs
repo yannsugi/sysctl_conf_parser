@@ -1,5 +1,15 @@
 use std::collections::HashMap;
 
+use super::{sysctl_conf_schema::SysctlConfSchemaError, SysctlConfSchema};
+
+#[derive(Debug, thiserror::Error)]
+pub enum SysctlConfError {
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+    #[error(transparent)]
+    SysctlConfSchemaError(#[from] SysctlConfSchemaError),
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Value {
     String(String),
@@ -13,10 +23,13 @@ impl SysctlConf {
     const FIRST_INDEX: usize = 0;
     const SINGLE_KEY_LENGTH: usize = 1;
 
-    pub fn new(lines: Vec<String>) -> Self {
+    pub fn new(
+        sysctl_conf_line_list: Vec<String>,
+        sysctl_conf_schema: SysctlConfSchema,
+    ) -> Result<Self, SysctlConfError> {
         let mut map = HashMap::new();
 
-        for line in lines {
+        for line in sysctl_conf_line_list {
             let line = line.trim();
 
             if line.is_empty() || line.starts_with('#') {
@@ -24,14 +37,17 @@ impl SysctlConf {
             }
 
             if let Some((key, value)) = line.split_once('=') {
-                let keys: Vec<&str> = key.trim().split('.').collect();
+                let key = key.trim();
+                let keys: Vec<&str> = key.split('.').collect();
                 let value = value.trim();
+
+                sysctl_conf_schema.validate_value_type(key, value)?;
 
                 Self::insert_into_map(&mut map, &keys, value.to_string());
             }
         }
 
-        Self(map)
+        Ok(Self(map))
     }
 
     fn insert_into_map(map: &mut HashMap<String, Value>, keys: &[&str], value: String) {
@@ -83,6 +99,14 @@ impl SysctlConf {
 mod tests {
     use super::*;
 
+    fn create_test_schema() -> SysctlConfSchema {
+        let lines = vec![
+            "net.ipv4.ip_forward -> integer".to_string(),
+            "net.ipv4.conf.all.rp_filter -> integer".to_string(),
+        ];
+        SysctlConfSchema::new(lines).unwrap()
+    }
+
     #[test]
     fn test_sysctl_conf_new() {
         let lines = vec![
@@ -95,7 +119,8 @@ mod tests {
             "# This is a comment".to_string(),
         ];
 
-        let sysctl_conf = SysctlConf::new(lines);
+        let sysctl_conf_schema = create_test_schema();
+        let sysctl_conf = SysctlConf::new(lines, sysctl_conf_schema).unwrap();
 
         let mut expected_data = HashMap::new();
 
@@ -131,7 +156,8 @@ mod tests {
             "endpoint = localhost::3000".to_string(),
         ];
 
-        let sysctl_conf = SysctlConf::new(lines);
+        let schema = create_test_schema();
+        let sysctl_conf = SysctlConf::new(lines, schema).unwrap();
 
         assert_eq!(
             sysctl_conf.get("net.ipv4.ip_forward"),
@@ -147,5 +173,26 @@ mod tests {
             Some(&"localhost::3000".to_string())
         );
         assert_eq!(sysctl_conf.get("non.existent.key"), None);
+    }
+
+    #[test]
+    fn test_sysctl_conf_new_with_invalid_value() {
+        let lines = vec![
+            "net.ipv4.ip_forward=1".to_string(),
+            "net.ipv4.conf.all.rp_filter=invalid_value".to_string(),
+        ];
+
+        let schema = create_test_schema();
+        let result = SysctlConf::new(lines, schema);
+
+        assert!(result.is_err());
+        if let Err(SysctlConfError::SysctlConfSchemaError(err)) = result {
+            assert_eq!(
+                err.to_string(),
+                "Invalid value type for key 'net.ipv4.conf.all.rp_filter'"
+            );
+        } else {
+            panic!("Expected ValidationError");
+        }
     }
 }
