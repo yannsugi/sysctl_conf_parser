@@ -13,10 +13,10 @@ cargo run -- <path>
 
 ### サンプル実行例
 ```sh
-cargo run -- test_data/sample_sysctl.conf
+cargo run -- tests/source/sample_sysctl.conf
 ```
 
-このコマンドは、`test_data/sample_sysctl.conf`ファイルをパースし、結果を表示します。
+このコマンドは、`tests/source/sample_sysctl.conf`ファイルをパースし、結果を表示します。
 
 ### 入力例
 

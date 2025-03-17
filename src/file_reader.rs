@@ -27,7 +27,7 @@ mod tests {
 
     #[test]
     fn test_read_file_to_vec_string() {
-        let test_file_path = "test_data/test_file.txt";
+        let test_file_path = "tests/source/test_file.txt";
         let test_content = "line1\nline2\nline3";
 
         // テスト用のファイルを作成
@@ -45,7 +45,7 @@ mod tests {
 
     #[test]
     fn test_read_file_to_vec_string_empty_file() {
-        let test_file_path = "test_data/empty_file.txt";
+        let test_file_path = "tests/source/empty_file.txt";
         let test_content = "";
 
         // テスト用のファイルを作成
@@ -63,7 +63,7 @@ mod tests {
 
     #[test]
     fn test_read_file_to_vec_string_nonexistent_file() {
-        let test_file_path = "test_data/nonexistent_file.txt";
+        let test_file_path = "tests/source/nonexistent_file.txt";
 
         // 関数をテスト
         let result = read_file_to_vec_string(test_file_path);

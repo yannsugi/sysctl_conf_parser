@@ -3,7 +3,7 @@ use sysctl_conf_parser::parse_sysctl_from_path;
 
 #[test]
 fn test_parse_sysctl_from_path() -> Result<()> {
-    let path = "test_data/sysctl.conf";
+    let path = "tests/source/sysctl.conf";
     let sysctl_conf = parse_sysctl_from_path(path)?;
 
     assert_eq!(
