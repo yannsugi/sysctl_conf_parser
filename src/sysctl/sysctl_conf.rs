@@ -37,7 +37,8 @@ impl SysctlConf {
             }
 
             if let Some((key, value)) = line.split_once('=') {
-                let keys: Vec<&str> = key.trim().split('.').collect();
+                let key = key.trim();
+                let keys: Vec<&str> = key.split('.').collect();
                 let value = value.trim();
 
                 sysctl_conf_schema.validate_value_type(key, value)?;
@@ -98,6 +99,14 @@ impl SysctlConf {
 mod tests {
     use super::*;
 
+    fn create_test_schema() -> SysctlConfSchema {
+        let lines = vec![
+            "net.ipv4.ip_forward -> integer".to_string(),
+            "net.ipv4.conf.all.rp_filter -> integer".to_string(),
+        ];
+        SysctlConfSchema::new(lines).unwrap()
+    }
+
     #[test]
     fn test_sysctl_conf_new() {
         let lines = vec![
@@ -110,7 +119,7 @@ mod tests {
             "# This is a comment".to_string(),
         ];
 
-        let sysctl_conf_schema = SysctlConfSchema::default();
+        let sysctl_conf_schema = create_test_schema();
         let sysctl_conf = SysctlConf::new(lines, sysctl_conf_schema).unwrap();
 
         let mut expected_data = HashMap::new();
@@ -147,7 +156,7 @@ mod tests {
             "endpoint = localhost::3000".to_string(),
         ];
 
-        let schema = SysctlConfSchema::default();
+        let schema = create_test_schema();
         let sysctl_conf = SysctlConf::new(lines, schema).unwrap();
 
         assert_eq!(
@@ -164,5 +173,26 @@ mod tests {
             Some(&"localhost::3000".to_string())
         );
         assert_eq!(sysctl_conf.get("non.existent.key"), None);
+    }
+
+    #[test]
+    fn test_sysctl_conf_new_with_invalid_value() {
+        let lines = vec![
+            "net.ipv4.ip_forward=1".to_string(),
+            "net.ipv4.conf.all.rp_filter=invalid_value".to_string(),
+        ];
+
+        let schema = create_test_schema();
+        let result = SysctlConf::new(lines, schema);
+
+        assert!(result.is_err());
+        if let Err(SysctlConfError::SysctlConfSchemaError(err)) = result {
+            assert_eq!(
+                err.to_string(),
+                "Invalid value type for key 'net.ipv4.conf.all.rp_filter'"
+            );
+        } else {
+            panic!("Expected ValidationError");
+        }
     }
 }
