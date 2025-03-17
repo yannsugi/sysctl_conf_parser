@@ -9,3 +9,10 @@ anyhow = "1.0.97"
 [lib]
 name = "sysctl_conf_parser"
 path = "src/lib.rs"
+
+[dev-dependencies]
+anyhow = "1.0"
+
+[[test]]
+name = "sysctl_conf_parser"
+path = "tests/sysctl_conf_parser.rs"
