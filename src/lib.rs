@@ -1,13 +1,22 @@
 use anyhow::Result;
 
-mod file_reader;
-mod sysctl_conf;
+mod file_io;
+mod sysctl;
 
-use file_reader::read_file_to_vec_string;
-pub use sysctl_conf::{SysctlConf, Value};
+use file_io::*;
 
-pub fn parse_sysctl_from_path(path: &str) -> Result<SysctlConf> {
-    let lines = read_file_to_vec_string(path)?;
+use sysctl::SysctlConfSchema;
+pub use sysctl::{SysctlConf, Value};
 
-    Ok(SysctlConf::new(lines))
+pub fn parse_sysctl_from_path(
+    sysctl_conf_file_path: &str,
+    schema_file_path: &str,
+) -> Result<SysctlConf> {
+    let sysctl_conf_line_list = read_file_to_vec_string(sysctl_conf_file_path)?;
+    let schema_line_list = read_file_to_vec_string(schema_file_path)?;
+
+    let sysctl_conf_schema = SysctlConfSchema::new(schema_line_list)?;
+    let sysctl_conf = SysctlConf::new(sysctl_conf_line_list, sysctl_conf_schema)?;
+
+    Ok(sysctl_conf)
 }

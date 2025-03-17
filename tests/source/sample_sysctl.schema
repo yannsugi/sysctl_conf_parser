@@ -1,0 +1,5 @@
+endpoint -> string
+debug -> bool
+port -> integer
+log.file -> String
+vm.dirty_ratio -> float

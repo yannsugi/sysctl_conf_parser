@@ -2,21 +2,27 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
-pub(crate) fn read_file_to_vec_string(filename: &str) -> io::Result<Vec<String>> {
+#[derive(thiserror::Error, Debug)]
+pub enum FileReaderError {
+    #[error("Failed to open file {0}: {1}")]
+    OpenError(String, io::Error),
+    #[error("Failed to read line: {0}")]
+    ReadLineError(io::Error),
+}
+
+pub(crate) fn read_file_to_vec_string(filename: &str) -> Result<Vec<String>, FileReaderError> {
     let path = Path::new(filename);
-    let file = File::open(&path).map_err(|e| {
-        io::Error::new(e.kind(), format!("Failed to open file {}: {}", filename, e))
-    })?;
+    let file =
+        File::open(&path).map_err(|e| FileReaderError::OpenError(filename.to_string(), e))?;
     let reader = io::BufReader::new(file);
 
-    let mut lines = Vec::new();
+    let mut line_list = Vec::new();
     for line in reader.lines() {
-        let line =
-            line.map_err(|e| io::Error::new(e.kind(), format!("Failed to read line: {}", e)))?;
-        lines.push(line);
+        let line = line.map_err(FileReaderError::ReadLineError)?;
+        line_list.push(line);
     }
 
-    Ok(lines)
+    Ok(line_list)
 }
 
 #[cfg(test)]

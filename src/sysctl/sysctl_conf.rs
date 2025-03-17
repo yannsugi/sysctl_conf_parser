@@ -1,5 +1,15 @@
 use std::collections::HashMap;
 
+use super::{sysctl_conf_schema::SysctlConfSchemaError, SysctlConfSchema};
+
+#[derive(Debug, thiserror::Error)]
+pub enum SysctlConfError {
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+    #[error(transparent)]
+    SysctlConfSchemaError(#[from] SysctlConfSchemaError),
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Value {
     String(String),
@@ -13,10 +23,13 @@ impl SysctlConf {
     const FIRST_INDEX: usize = 0;
     const SINGLE_KEY_LENGTH: usize = 1;
 
-    pub fn new(lines: Vec<String>) -> Self {
+    pub fn new(
+        sysctl_conf_line_list: Vec<String>,
+        sysctl_conf_schema: SysctlConfSchema,
+    ) -> Result<Self, SysctlConfError> {
         let mut map = HashMap::new();
 
-        for line in lines {
+        for line in sysctl_conf_line_list {
             let line = line.trim();
 
             if line.is_empty() || line.starts_with('#') {
@@ -27,11 +40,13 @@ impl SysctlConf {
                 let keys: Vec<&str> = key.trim().split('.').collect();
                 let value = value.trim();
 
+                sysctl_conf_schema.validate_value_type(key, value)?;
+
                 Self::insert_into_map(&mut map, &keys, value.to_string());
             }
         }
 
-        Self(map)
+        Ok(Self(map))
     }
 
     fn insert_into_map(map: &mut HashMap<String, Value>, keys: &[&str], value: String) {
@@ -95,7 +110,8 @@ mod tests {
             "# This is a comment".to_string(),
         ];
 
-        let sysctl_conf = SysctlConf::new(lines);
+        let sysctl_conf_schema = SysctlConfSchema::default();
+        let sysctl_conf = SysctlConf::new(lines, sysctl_conf_schema).unwrap();
 
         let mut expected_data = HashMap::new();
 
@@ -131,7 +147,8 @@ mod tests {
             "endpoint = localhost::3000".to_string(),
         ];
 
-        let sysctl_conf = SysctlConf::new(lines);
+        let schema = SysctlConfSchema::default();
+        let sysctl_conf = SysctlConf::new(lines, schema).unwrap();
 
         assert_eq!(
             sysctl_conf.get("net.ipv4.ip_forward"),
