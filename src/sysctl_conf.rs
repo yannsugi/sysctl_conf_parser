@@ -29,9 +29,6 @@ impl SysctlConf {
                 let value = value.trim();
 
                 Self::insert_into_map(&mut map, &keys, value.to_string());
-            } else {
-                let keys: Vec<&str> = line.split('.').collect();
-                Self::insert_into_map(&mut map, &keys, String::new());
             }
         }
 
@@ -107,7 +104,6 @@ mod tests {
         let mut conf_map = HashMap::new();
         let mut all_map = HashMap::new();
         let mut net_map = HashMap::new();
-        let mut kernel_map = HashMap::new();
         let mut vm_map = HashMap::new();
 
         ipv4_map.insert("ip_forward".to_string(), Value::String("1".to_string()));
@@ -115,10 +111,8 @@ mod tests {
         all_map.insert("all".to_string(), Value::Map(conf_map));
         ipv4_map.insert("conf".to_string(), Value::Map(all_map));
         net_map.insert("ipv4".to_string(), Value::Map(ipv4_map));
-        kernel_map.insert("hostname".to_string(), Value::String(String::new()));
         vm_map.insert("swappiness".to_string(), Value::String(String::new()));
         expected_data.insert("net".to_string(), Value::Map(net_map));
-        expected_data.insert("kernel".to_string(), Value::Map(kernel_map));
         expected_data.insert("vm".to_string(), Value::Map(vm_map));
         expected_data.insert(
             "endpoint".to_string(),
@@ -148,7 +142,6 @@ mod tests {
             sysctl_conf.get("net.ipv4.conf.all.rp_filter"),
             Some(&"1".to_string())
         );
-        assert_eq!(sysctl_conf.get("kernel.hostname"), Some(&String::new()));
         assert_eq!(sysctl_conf.get("vm.swappiness"), Some(&String::new()));
         assert_eq!(
             sysctl_conf.get("endpoint"),
