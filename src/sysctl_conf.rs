@@ -7,7 +7,6 @@ pub enum Value {
 }
 
 #[derive(Debug, Default)]
-#[allow(dead_code)] // self.0にアクセスしないため、警告を抑制
 pub struct SysctlConf(HashMap<String, Value>);
 
 impl SysctlConf {
