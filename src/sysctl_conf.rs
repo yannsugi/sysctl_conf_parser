@@ -11,6 +11,9 @@ pub enum Value {
 pub struct SysctlConf(HashMap<String, Value>);
 
 impl SysctlConf {
+    const FIRST_INDEX: usize = 0;
+    const SINGLE_KEY_LENGTH: usize = 1;
+
     pub fn new(lines: Vec<String>) -> Self {
         let mut map = HashMap::new();
 
@@ -37,13 +40,13 @@ impl SysctlConf {
             return;
         }
 
-        let key = keys[0].to_string();
-        if keys.len() == 1 {
+        let key = keys[Self::FIRST_INDEX].to_string();
+        if keys.len() == Self::SINGLE_KEY_LENGTH {
             map.insert(key, Value::String(value));
         } else {
             let entry = map.entry(key).or_insert_with(|| Value::Map(HashMap::new()));
             if let Value::Map(sub_map) = entry {
-                Self::insert_into_map(sub_map, &keys[1..], value);
+                Self::insert_into_map(sub_map, &keys[Self::FIRST_INDEX + 1..], value);
             }
         }
     }
